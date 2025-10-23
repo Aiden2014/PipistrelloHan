@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- 设置你的游戏安装路径 -->
+    <!-- Set your game installation path -->
+    <GamePath>C:\Program Files (x86)\Steam\steamapps\common\Pipistrello and the Cursed Yoyo</GamePath>
+  </PropertyGroup>
+</Project>

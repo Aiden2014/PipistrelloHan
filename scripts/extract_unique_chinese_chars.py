@@ -8,7 +8,8 @@
 from const import (
     PARATRANZ_FILE, 
     UNIQUE_CHINESE_CHARS_FILE,
-    TRANSLATION_EXTRAS
+    TRANSLATION_EXTRAS,
+    SYMBOL_EXTRAS
 )
 import os
 import re
@@ -46,6 +47,10 @@ def extract_unique_chinese_chars(file_path):
             if is_chinese_char(char):
                 chinese_chars.add(char)
     
+    # 添加额外的符号字符
+    for symbol in SYMBOL_EXTRAS:
+        chinese_chars.add(symbol)
+
     return chinese_chars
 
 
@@ -97,7 +102,7 @@ def main():
     unique_chars = extract_unique_chinese_chars(csv_file)
     
     print(f"提取到 {len(unique_chars)} 个不重复的中文字符")
-    
+
     # 按Unicode编码排序
     sorted_chars = sorted(unique_chars, key=lambda x: ord(x))
     

@@ -46,3 +46,6 @@ EXTRA_TRANSLATIONS = {
 
 # 额外的中文字符（用于字符提取）
 TRANSLATION_EXTRAS = ["語"] + list(EXTRA_TRANSLATIONS.values())
+
+# 额外的符号字符（用于字符提取）
+SYMBOL_EXTRAS = ["《", "》"]

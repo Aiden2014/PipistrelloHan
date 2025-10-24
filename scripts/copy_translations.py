@@ -31,6 +31,30 @@ def parse_string_id(string_id):
         return (base_id, index)
     return (string_id, 0)
 
+def check_bracket_matching(text):
+    """
+    检查文本中的中括号是否匹配
+    返回 True 如果匹配，否则返回 False
+    """
+    stack = []
+    for char in text:
+        if char == '[':
+            stack.append('[')
+        elif char == ']':
+            if stack:
+                stack.pop()
+            else:
+                return False  # 多余的右括号
+    return len(stack) == 0  # 如果栈为空，则匹配
+
+def check_if_unicode_next_to_brackets(text):
+    """
+    检查左中括号的右边第一个字符是否有非ASCII字符（Unicode字符）
+    返回 True 如果有，否则返回 False
+    """
+    pattern = re.compile(r'\[([^\x00-\x7F])')
+    return bool(pattern.search(text))
+
 def main():
     print("开始处理翻译文件...")
     
@@ -95,30 +119,38 @@ def main():
                     
                     if old_value != new_value:
                         row[6] = new_value
+                        # 判断中括号是否匹配
+                        if not check_bracket_matching(new_value):
+                            print(f"  警告: [{row_id}] 中括号不匹配，值为: {new_value}")
+                        if check_if_unicode_next_to_brackets(new_value):
+                            print(f"  警告: [{row_id}] 左中括号后有Unicode字符，值为: {new_value}")
                         updated_count += 1
                         if updated_count <= 20:  # 只显示前20个更新示例
                             print(f"  [{row_id}] 更新")
                 else:
                     skipped_count += 1
-                    
             elif row_id == '^' and current_base_id:
                 # 这是一个续行
                 continuation_index += 1
                 prefixed_id = f"^{continuation_index}${current_base_id}"
-                
                 if prefixed_id in translations:
                     # 确保行有足够的列
                     while len(row) < 13:
                         row.append("")
-                    
+
                     old_value = row[6] if len(row) > 6 else ""
                     new_value = translations[prefixed_id]
-                    
+
                     if old_value != new_value:
                         row[6] = new_value
+                        # 判断中括号是否匹配
+                        if not check_bracket_matching(new_value):
+                            print(f"  警告: [{row_id}] 中括号不匹配，值为: {new_value}")
+                        if check_if_unicode_next_to_brackets(new_value):
+                            print(f"  警告: [{row_id}] 左中括号后有Unicode字符，值为: {new_value}")
                         updated_count += 1
                         if updated_count <= 20:  # 只显示前20个更新示例
-                            print(f"  [{prefixed_id}] 更新 (续行 {continuation_index})")
+                            print(f"  [{row_id}] 更新")
                 else:
                     skipped_count += 1
             else:

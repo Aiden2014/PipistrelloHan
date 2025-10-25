@@ -31,6 +31,30 @@ def parse_string_id(string_id):
         return (base_id, index)
     return (string_id, 0)
 
+def convert_suffix_to_continuation(string_id):
+    """
+    将带字母后缀的ID转换为续行格式
+    例如：jewelryShop_appraisalDiamond2b -> ^1$jewelryShop_appraisalDiamond2
+         jewelryShop_appraisalDiamond2c -> ^2$jewelryShop_appraisalDiamond2
+         prologue_taxi2b -> ^1$prologue_taxi2a (特殊情况，a后缀对应基础ID)
+    """
+    # 检查是否以数字+字母结尾
+    match = re.match(r'^(.+\d)([b-z])$', string_id)
+    if match:
+        base_part = match.group(1)  # 例如 jewelryShop_appraisalDiamond2
+        suffix = match.group(2)      # 例如 'b'
+        
+        # 计算索引：b=1, c=2, d=3, ...
+        index = ord(suffix) - ord('a')
+        
+        # 检查是否存在对应的 'a' 后缀版本
+        # 如果有，则基础ID应该是 base_part + 'a'
+        base_with_a = base_part + 'a'
+        
+        return (f"^{index}${base_with_a}", base_with_a, base_part)
+    
+    return (None, None, None)
+
 def check_bracket_matching(text):
     """
     检查文本中的中括号是否匹配
@@ -93,6 +117,7 @@ def main():
     print("正在更新翻译...")
     updated_count = 0
     skipped_count = 0
+    suffix_converted_count = 0
     
     # 用于跟踪当前基础ID和其后续的^行
     current_base_id = None
@@ -108,7 +133,9 @@ def main():
                 current_base_id = row_id
                 continuation_index = 0
                 
-                # 尝试直接匹配
+                translation_found = False
+                
+                # 首先尝试直接匹配
                 if row_id in translations:
                     # 确保行有足够的列
                     while len(row) < 13:
@@ -127,8 +154,61 @@ def main():
                         updated_count += 1
                         if updated_count <= 20:  # 只显示前20个更新示例
                             print(f"  [{row_id}] 更新")
-                else:
+                    translation_found = True
+                
+                # 如果直接匹配失败，尝试字母后缀转换
+                # 例如：jewelryShop_appraisalDiamond2b -> ^1$jewelryShop_appraisalDiamond2a
+                if not translation_found:
+                    continuation_id, base_with_a, base_without_suffix = convert_suffix_to_continuation(row_id)
+                    if continuation_id:
+                        # 尝试匹配续行格式
+                        if continuation_id in translations:
+                            while len(row) < 13:
+                                row.append("")
+                            
+                            old_value = row[6] if len(row) > 6 else ""
+                            new_value = translations[continuation_id]
+                            
+                            if old_value != new_value:
+                                row[6] = new_value
+                                if not check_bracket_matching(new_value):
+                                    print(f"  警告: [{row_id}] 中括号不匹配，值为: {new_value}")
+                                if check_if_unicode_next_to_brackets(new_value):
+                                    print(f"  警告: [{row_id}] 左中括号后有Unicode字符，值为: {new_value}")
+                                updated_count += 1
+                                suffix_converted_count += 1
+                                print(f"  [{row_id}] -> [{continuation_id}] 更新 (字母后缀转换)")
+                            translation_found = True
+                        # 也尝试没有'a'后缀的基础ID对应的续行
+                        elif base_without_suffix:
+                            # 获取后缀字母的索引
+                            match = re.match(r'^(.+\d)([b-z])$', row_id)
+                            if match:
+                                suffix = match.group(2)
+                                index = ord(suffix) - ord('a')
+                                alt_continuation_id = f"^{index}${base_without_suffix}"
+                                
+                                if alt_continuation_id in translations:
+                                    while len(row) < 13:
+                                        row.append("")
+                                    
+                                    old_value = row[6] if len(row) > 6 else ""
+                                    new_value = translations[alt_continuation_id]
+                                    
+                                    if old_value != new_value:
+                                        row[6] = new_value
+                                        if not check_bracket_matching(new_value):
+                                            print(f"  警告: [{row_id}] 中括号不匹配，值为: {new_value}")
+                                        if check_if_unicode_next_to_brackets(new_value):
+                                            print(f"  警告: [{row_id}] 左中括号后有Unicode字符，值为: {new_value}")
+                                        updated_count += 1
+                                        suffix_converted_count += 1
+                                        print(f"  [{row_id}] -> [{alt_continuation_id}] 更新 (字母后缀转换-无a)")
+                                    translation_found = True
+                
+                if not translation_found:
                     skipped_count += 1
+                    
             elif row_id == '^' and current_base_id:
                 # 这是一个续行
                 continuation_index += 1
@@ -150,7 +230,7 @@ def main():
                             print(f"  警告: [{row_id}] 左中括号后有Unicode字符，值为: {new_value}")
                         updated_count += 1
                         if updated_count <= 20:  # 只显示前20个更新示例
-                            print(f"  [{row_id}] 更新")
+                            print(f"  [{prefixed_id}] 更新")
                 else:
                     skipped_count += 1
             else:
@@ -159,6 +239,8 @@ def main():
             skipped_count += 1
     
     print(f"已更新 {updated_count} 条翻译")
+    if suffix_converted_count > 0:
+        print(f"  其中通过字母后缀转换匹配: {suffix_converted_count} 条")
     print(f"跳过 {skipped_count} 行（无匹配或空ID）")
     
     # 第四步：写回文件

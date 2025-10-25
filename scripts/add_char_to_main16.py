@@ -117,25 +117,7 @@ def generate_modified_atlas():
 
         print(f"3. 读取字符列表: {UNIQUE_CHINESE_CHARS_FILE}")
         with open(UNIQUE_CHINESE_CHARS_FILE, "r", encoding="utf-8") as f:
-            content = f.read()
-            # 查找 "所有不重复的中文字符：" 这一行之后的字符串
-            # 提取连续的字符行（直到遇到分隔符或详细信息部分）
-            lines = content.split('\n')
-            chars_to_draw = ""
-            start_collecting = False
-            for line in lines:
-                # 开始收集标记
-                if '所有不重复的中文字符' in line:
-                    start_collecting = True
-                    continue
-                
-                # 如果遇到分隔符或详细信息部分，停止收集
-                if start_collecting:
-                    if line.startswith('=') or '详细信息' in line or '|' in line:
-                        break
-                    # 收集字符（去除空白）
-                    if line.strip():
-                        chars_to_draw += line.strip()
+            chars_to_draw = f.read().strip()
         print(f"   找到 {len(chars_to_draw)} 个字符需要绘制。")
 
     except FileNotFoundError as e:

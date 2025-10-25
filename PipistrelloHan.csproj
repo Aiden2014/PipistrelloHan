@@ -39,4 +39,8 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="resources\unique_chinese_chars.txt" />
+  </ItemGroup>
+
 </Project>

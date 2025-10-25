@@ -1,4 +1,6 @@
-﻿using BepInEx;
+﻿using System.IO;
+using System.Reflection;
+using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
@@ -62,10 +64,12 @@ namespace PipistrelloHan
 
             char[] originalChars = Global.fontCharRanges;
             Plugin.Logger.LogInfo($"Original fontCharRanges length: {originalChars.Length}");
-            
+
             // 添加新字符到数组末尾（每个字符重复两次，符合原数组格式）
             Plugin.Logger.LogInfo("=== Replacing old doubled characters with new characters ===");
-            string newChars = "";
+            var assembly = Assembly.GetExecutingAssembly();
+            StreamReader sr = new(assembly.GetManifestResourceStream("PipistrelloHan.resources.unique_chinese_chars.txt"));
+            string newChars = sr.ReadToEnd().Trim();
             Plugin.Logger.LogInfo($"New characters count: {newChars.Length}");
             // 另外添加两个字符：后引号”和间隔符号·
             string newSymbolChars = "”·";
@@ -76,7 +80,7 @@ namespace PipistrelloHan
             int tmIndex = -1;
             for (int i = 0; i < originalLength - 1; i++)
             {
-                if(originalChars[i] == '™' && originalChars[i + 1] == '™' && tmIndex == -1)
+                if (originalChars[i] == '™' && originalChars[i + 1] == '™' && tmIndex == -1)
                 {
                     tmIndex = i;
                     Plugin.Logger.LogInfo($"Found '™' at index {i}");
@@ -135,9 +139,9 @@ namespace PipistrelloHan
                 }
                 index += 2;
             }
-            
+
             Plugin.Logger.LogInfo($"New array length: {newArray.Length} (original: {originalLength}, added: {newChars.Length * 2})");
-            
+
             // 将修改后的数组写回到 Global.fontCharRanges
             Global.fontCharRanges = newArray;
             Plugin.Logger.LogInfo("Successfully updated Global.fontCharRanges with new characters!");
